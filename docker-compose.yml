@@ -1,25 +1,26 @@
 version: '3.8'
+
 services:
   playwright-mcp:
     build: .
     restart: always
-    # IMPORTANT : On vide l'entrypoint par défaut pour reprendre le contrôle total
+    # IMPORTANT : On vide l'entrypoint pour reprendre le contrôle total du lancement
     entrypoint: []
-
-    # Maintenant, on définit la commande complète exacte
+    
+    # Voici la commande unique qui contient TOUT (y compris votre token browserless)
     command: >
-      node cli.js
-      --headless
-      --browser chromium
-      --no-sandbox
-      --host 0.0.0.0
-      --port 8931
-      --allowed-hosts='*'
+      node cli.js 
+      --host 0.0.0.0 
+      --port 8931 
+      --allowed-hosts='*' 
       --allowed-origins='*'
-
+      --cdp-endpoint='wss://browserless.iask.solutions?token=By8Iver0Y1ZMOIF9iAt0wpluobdEXob7'
+      
     ports:
       - "8931:8931"
-    # Indispensable pour éviter les crashs de Chrome ("Out of Memory")
-    shm_size: '2gb'
+    
+    # Toujours utile même avec browserless pour éviter que le processus Node ne s'étouffe
+    shm_size: '2gb' 
+    
     environment:
       - PORT=8931
