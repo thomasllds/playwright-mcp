@@ -4,10 +4,9 @@ services:
   playwright-mcp:
     build: .
     restart: always
-    # IMPORTANT : On vide l'entrypoint pour reprendre le contrôle total du lancement
-    entrypoint: []
+    # J'ai supprimé la ligne "entrypoint: []" qui bloquait
     
-    # Voici la commande unique qui contient TOUT (y compris votre token browserless)
+    # La commande complète (avec votre token browserless)
     command: >
       node cli.js 
       --host 0.0.0.0 
@@ -19,7 +18,7 @@ services:
     ports:
       - "8931:8931"
     
-    # Toujours utile même avec browserless pour éviter que le processus Node ne s'étouffe
+    # Indispensable pour la stabilité
     shm_size: '2gb' 
     
     environment:
