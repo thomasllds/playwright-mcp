@@ -73,7 +73,7 @@ COPY --chown=${USERNAME}:${USERNAME} packages/playwright-mcp/cli.js packages/pla
 
 # Healthcheck on the HTTP MCP server
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -fsS "http://localhost:${PLAYWRIGHT_MCP_PORT:-8931}/health" || exit 1
+  CMD curl -fsS "http://127.0.0.1:${PLAYWRIGHT_MCP_PORT:-8931}/health" || exit 1
 
 EXPOSE 8931
 
