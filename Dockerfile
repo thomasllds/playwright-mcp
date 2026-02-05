@@ -54,6 +54,10 @@ ARG PLAYWRIGHT_BROWSERS_PATH
 ARG USERNAME=node
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_MCP_OUTPUT_DIR=/tmp/playwright-output
+ENV PLAYWRIGHT_MCP_HOST=0.0.0.0
+ENV PLAYWRIGHT_MCP_PORT=8931
+ENV PLAYWRIGHT_MCP_ALLOWED_HOSTS=*
+ENV PLAYWRIGHT_MCP_ALLOWED_ORIGINS=*
 
 # Set the correct ownership for the runtime user on production `node_modules`
 RUN chown -R ${USERNAME}:${USERNAME} node_modules
@@ -62,6 +66,12 @@ USER ${USERNAME}
 
 COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
 COPY --chown=${USERNAME}:${USERNAME} packages/playwright-mcp/cli.js packages/playwright-mcp/package.json ./
+
+# Healthcheck on the HTTP MCP server
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://127.0.0.1:' + (process.env.PLAYWRIGHT_MCP_PORT || 8931) + '/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1));"
+
+EXPOSE 8931
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
 ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]
