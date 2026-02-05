@@ -391,6 +391,7 @@ This setup runs Playwright MCP as an HTTP server in Docker, fronted by Coolify +
 - Expose **internal port** `8931`.
 - Attach the **custom domain** (Coolify will provision TLS via Traefik).
 - Set environment variables (copy from `deploy/coolify.env.example`).
+- Make sure your selected **branch** includes the `Dockerfile` at the repository root (Coolify defaults to `./Dockerfile`). If you use a different path or subdirectory, set the Dockerfile path/build context accordingly in Coolify.
 
 #### 3) Environment variables (copy/paste)
 

@@ -13,6 +13,10 @@ ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
 # Set the working directory
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
@@ -69,7 +73,7 @@ COPY --chown=${USERNAME}:${USERNAME} packages/playwright-mcp/cli.js packages/pla
 
 # Healthcheck on the HTTP MCP server
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://127.0.0.1:' + (process.env.PLAYWRIGHT_MCP_PORT || 8931) + '/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1));"
+  CMD curl -fsS "http://localhost:${PLAYWRIGHT_MCP_PORT:-8931}/health" || exit 1
 
 EXPOSE 8931
 
