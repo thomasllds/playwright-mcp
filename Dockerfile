@@ -13,6 +13,10 @@ ENV PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}
 # Set the working directory
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-cache \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
@@ -54,6 +58,10 @@ ARG PLAYWRIGHT_BROWSERS_PATH
 ARG USERNAME=node
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_MCP_OUTPUT_DIR=/tmp/playwright-output
+ENV PLAYWRIGHT_MCP_HOST=0.0.0.0
+ENV PLAYWRIGHT_MCP_PORT=8931
+ENV PLAYWRIGHT_MCP_ALLOWED_HOSTS=*
+ENV PLAYWRIGHT_MCP_ALLOWED_ORIGINS=*
 
 # Set the correct ownership for the runtime user on production `node_modules`
 RUN chown -R ${USERNAME}:${USERNAME} node_modules
@@ -62,6 +70,12 @@ USER ${USERNAME}
 
 COPY --from=browser --chown=${USERNAME}:${USERNAME} ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
 COPY --chown=${USERNAME}:${USERNAME} packages/playwright-mcp/cli.js packages/playwright-mcp/package.json ./
+
+# Healthcheck on the HTTP MCP server
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:${PLAYWRIGHT_MCP_PORT:-8931}/health" || exit 1
+
+EXPOSE 8931
 
 # Run in headless and only with chromium (other browsers need more dependencies not included in this image)
 ENTRYPOINT ["node", "cli.js", "--headless", "--browser", "chromium", "--no-sandbox"]

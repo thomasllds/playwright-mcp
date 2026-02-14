@@ -342,7 +342,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --browser <browser> | browser or chrome channel to use, possible values: chrome, firefox, webkit, msedge.<br>*env* `PLAYWRIGHT_MCP_BROWSER` |
 | --caps <caps> | comma-separated list of additional capabilities to enable, possible values: vision, pdf, devtools.<br>*env* `PLAYWRIGHT_MCP_CAPS` |
 | --cdp-endpoint <endpoint> | CDP endpoint to connect to.<br>*env* `PLAYWRIGHT_MCP_CDP_ENDPOINT` |
-| --cdp-header <headers...> | CDP headers to send with the connect request, multiple can be specified.<br>*env* `PLAYWRIGHT_MCP_CDP_HEADER` |
+| --cdp-header <headers...> | CDP headers to send with the connect request, multiple can be specified.<br>*env* `PLAYWRIGHT_MCP_CDP_HEADERS` |
 | --codegen <lang> | specify the language to use for code generation, possible values: "typescript", "none". Default is "typescript".<br>*env* `PLAYWRIGHT_MCP_CODEGEN` |
 | --config <path> | path to the configuration file.<br>*env* `PLAYWRIGHT_MCP_CONFIG` |
 | --console-level <level> | level of console messages to return: "error", "warning", "info", "debug". Each level includes the messages of more severe levels.<br>*env* `PLAYWRIGHT_MCP_CONSOLE_LEVEL` |
@@ -379,6 +379,57 @@ Playwright MCP server supports following arguments. They can be provided in the 
 | --viewport-size <size> | specify browser viewport size in pixels, for example "1280x720"<br>*env* `PLAYWRIGHT_MCP_VIEWPORT_SIZE` |
 
 <!--- End of options generated section -->
+
+### Deploy on Coolify/Traefik behind HTTPS
+
+This setup runs Playwright MCP as an HTTP server in Docker, fronted by Coolify + Traefik TLS. The MCP endpoint will be available at `https://your-domain/mcp` (and `/sse` for legacy clients).
+
+#### 1) DNS
+- Create an `A` record pointing your domain (e.g. `playwrightmcp.example.com`) to the server IP.
+
+#### 2) Coolify service
+- Expose **internal port** `8931`.
+- Attach the **custom domain** (Coolify will provision TLS via Traefik).
+- Set environment variables (copy from `deploy/coolify.env.example`).
+- Make sure your selected **branch** includes the `Dockerfile` at the repository root (Coolify defaults to `./Dockerfile`). If you use a different path or subdirectory, set the Dockerfile path/build context accordingly in Coolify.
+
+#### 3) Environment variables (copy/paste)
+
+```bash
+PLAYWRIGHT_MCP_HOST=0.0.0.0
+PLAYWRIGHT_MCP_PORT=8931
+PLAYWRIGHT_MCP_ALLOWED_HOSTS=*
+PLAYWRIGHT_MCP_ALLOWED_ORIGINS=*
+PLAYWRIGHT_MCP_CDP_ENDPOINT=wss://browserless.example.com?token=REDACTED
+PLAYWRIGHT_MCP_SHARED_BROWSER_CONTEXT=true
+```
+
+**CDP headers parsing**
+- JSON: `PLAYWRIGHT_MCP_CDP_HEADERS={"x-api-key":"REDACTED"}`
+- Key-value list: `PLAYWRIGHT_MCP_CDP_HEADERS=x-api-key:REDACTED;x-client:playwright-mcp`
+
+**Allowed hosts/origins parsing**
+- Comma/semicolon/space delimited: `PLAYWRIGHT_MCP_ALLOWED_HOSTS=example.com,api.example.com`
+- Quotes are respected: `PLAYWRIGHT_MCP_ALLOWED_HOSTS="example.com";"api.example.com"`
+
+#### 4) Docker run example
+
+```bash
+docker run --rm -p 8931:8931 \\
+  -e PLAYWRIGHT_MCP_HOST=0.0.0.0 \\
+  -e PLAYWRIGHT_MCP_PORT=8931 \\
+  -e PLAYWRIGHT_MCP_ALLOWED_HOSTS="*" \\
+  -e PLAYWRIGHT_MCP_ALLOWED_ORIGINS="*" \\
+  -e PLAYWRIGHT_MCP_CDP_ENDPOINT="wss://browserless.example.com?token=REDACTED" \\
+  ghcr.io/microsoft/playwright-mcp:latest
+```
+
+#### 5) n8n MCP Client Tool
+- **MCP Server URL:** `https://your-domain/mcp`
+- **Fallback (legacy):** `https://your-domain/sse`
+
+#### Health check
+- `GET https://your-domain/health` returns `200 ok`.
 
 ### User profile
 
